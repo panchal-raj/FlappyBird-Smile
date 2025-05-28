@@ -13,14 +13,14 @@ const gameState = {
     running: false,
     score: 0,
     highScore: localStorage.getItem('flappyHighScore') || 0,
-    gravity: 0.05,
+    gravity: 0.03,
     bird: {
         x: 50,
         y: 150,
         width: 34,
         height: 24,
         velocity: 0,
-        jumpStrength: -3
+        jumpStrength: -2.5
     },
     pipes: [],
     pipeGap: 150,
@@ -37,7 +37,7 @@ const gameState = {
     difficulty: 'normal',
     arcadeMode: {
         active: false,
-        speedIncrease: 0.1,
+        speedIncrease: 0.5,
         gapDecrease: 1,
         scoreThreshold: 5
     },

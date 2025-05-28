@@ -15,7 +15,7 @@ import { setupInputListeners } from './utils/input.js';
 import { initWebcam, isWebcamReady, stopWebcam, showWebcamElement, hideWebcamElement, drawWebcamBackground } from './webcam.js';
 // Import calibration functions (ensure path is correct)
 import { startCalibrationScreen, stopCalibration} from './calibration.js';
-import { loadModels, faceApiLoaded } from './smileDetector.js';
+import { loadModels, faceApiLoaded, stopSmileUpdates } from './smileDetector.js';
 
 // Make game functions globally available (optional, useful for debugging)
 window.gameLoaded = true;
@@ -77,6 +77,15 @@ function stopLoop() {
  * Initializes the game: sets up screens, loads assets, sets up listeners.
  */
 function initGame() {
+        // ADD THESE LINES:
+    if (window.initGameHasRun) {
+        console.log("initGame: Already run. Skipping.");
+        return;
+    }
+    window.initGameHasRun = true;
+    console.log("initGame: Running for the first time.");
+    // END OF ADDED LINES
+
     console.log("Initializing game...");
 
     screens.mainMenu = document.getElementById('main-menu');
@@ -261,6 +270,15 @@ function initializeButtons() {
             gameSettings.inputMethod = btn.dataset.input;
             document.querySelectorAll('.input-btn:not(#calibrate-btn)').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
+
+                // ADD THIS LOGIC:
+            // If the new input method is NOT smile, ensure smile updates are stopped.
+            if (gameSettings.inputMethod !== 'smile') {
+                if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
+                // Optionally, also call stopWebcam() if webcam should only be active for smile/altitude modes
+                // However, calibration might also use the webcam, so be cautious here.
+                stopWebcam(); // Consider the implications for calibration flow
+        }
         });
     });
     selectDefaultButtons();
@@ -306,6 +324,7 @@ function showScreen(screenName) {
     if (screenName === 'mainMenu') {
         stopWebcam(); // Stop webcam stream AND hide its container
         gameState.calibrationMode = false; // Ensure calibration mode is off
+        if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
     } else if (screenName === 'game') {
         // The 'game' screen hosts the canvas for both gameplay and calibration.
         if (gameState.calibrationMode) {
@@ -328,6 +347,7 @@ function showScreen(screenName) {
             hideWebcamElement(); // Keep stream for face-api if smile input, but hide element
         }
         if(screens.calibration) screens.calibration.style.display = 'none';
+        if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
     }
 
     // Ensure the game canvas container is visible if showing 'game' screen (for canvas operations)
@@ -403,12 +423,12 @@ async function startGame() {
     // Reset core game state variables
     gameState.running = true;
     gameState.score = 0;
-    gameState.lives = 3;
+    gameState.lives = 5;
     gameState.invulnerable = false;
     gameState.invulnerabilityTimer = 0;
     gameState.pipes = [];
     gameState.stars = [];
-    gameState.bird.x = 50;
+    gameState.bird.x = 120;
     gameState.bird.y = canvas.height / 3;
     gameState.bird.velocity = 0;
     gameState.groundPos = 0;
@@ -447,6 +467,7 @@ async function startGame() {
     } else {
         // If NOT using smile/altitude input, stop webcam completely (stream and container).
         stopWebcam();
+        if (typeof stopSmileUpdates === 'function') stopSmileUpdates(); // Ensures smile detection interval is cleared
     }
 
     updateScore(0);
@@ -527,6 +548,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // gameState.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
     initGame();
 });
+
+// document.addEventListener('DOMContentLoaded', function() {
+//     let initGameHasRun = false; // Declare here
+
+//     function initGame() { // Define or ensure initGame is accessible here
+//         if (initGameHasRun) {
+//             console.log("initGame: Already run. Skipping.");
+//             return;
+//         }
+//         initGameHasRun = true;
+//         console.log("initGame: Running for the first time.");
+
+//         console.log("Initializing game...");
+//         // ... rest of initGame
+//     }
+
+//     console.log("DOM Content Loaded - initializing game"); // Existing line
+//     initGame(); // Call the scoped initGame
+// });
 
 // Export functions that might be needed by other modules or for debugging
 export {

@@ -145,16 +145,16 @@
         // This script handles initialization and buttons before modules are fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Show loading screen when buttons are clicked before modules are ready
-            document.getElementById('start-game-btn').addEventListener('click', function() {
-            console.log("Start button clicked from HTML handler");
-            if (typeof window.startGame === 'function') {
-                console.log("Calling window.startGame()");
-                window.startGame();
-            } else {
-                console.log("window.startGame is not available");
-                document.getElementById('loading-screen').style.display = 'flex';
-            }
-        });
+        //     document.getElementById('start-game-btn').addEventListener('click', function() {
+        //     console.log("Start button clicked from HTML handler");
+        //     if (typeof window.startGame === 'function') {
+        //         console.log("Calling window.startGame()");
+        //         window.startGame();
+        //     } else {
+        //         console.log("window.startGame is not available");
+        //         document.getElementById('loading-screen').style.display = 'flex';
+        //     }
+        // });
             
             // Mode selection buttons
             const modeButtons = document.querySelectorAll('.mode-btn');
@@ -283,12 +283,12 @@
         });
     </script>
     <script>
-        document.getElementById('start-game-btn').addEventListener('click', function() {
-          console.log("Starting game manually");
-          // Show game screen
-          document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-          document.getElementById('game-screen').style.display = 'block';
-        });
+        // document.getElementById('start-game-btn').addEventListener('click', function() {
+        //   console.log("Starting game manually");
+        //   // Show game screen
+        //   document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        //   document.getElementById('game-screen').style.display = 'block';
+        // });
       </script>
       
 </body>

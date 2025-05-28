@@ -12,8 +12,8 @@ let lastSmileValue = -1; // To store the detected smile intensity or a boolean
 let smileUpdateInterval = null;
 
 let isSmileCalibrated = false;
-let calibratedFixedSmileValue = 50; // Default placeholder, to be set by calibration (10-100)
-let smileThreshold = 0.3; // Initial low threshold (0-1 raw) for differentiating smile vs neutral
+let calibratedFixedSmileValue = 20; // Default placeholder, to be set by calibration (10-100)
+let smileThreshold = 0.2; // Initial low threshold (0-1 raw) for differentiating smile vs neutral
 
 /*
 // FUTURE IDEA: For making the bird jump with a smile
