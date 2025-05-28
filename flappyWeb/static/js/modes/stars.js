@@ -1,111 +1,66 @@
-// // modes/stars.js
-// import { gameState, gameSettings } from '../gameState.js';
-// import { assets, sounds } from '../assets.js';
-// import { isOverlappingPipe } from '../utils/collisions.js';
-// import { drawStar } from '../utils/rendering.js';
+// static/js/modes/stars.js - Stars game mode implementation
+import { gameState, gameSettings, sounds, updateScore } from '../gameState.js';
+import { assets } from '../assets.js';
+import { checkStarCollisions, createStar, drawStars } from './starUtils.js'; // We'll create this utility file
 
-// // Get canvas reference
-// let canvas;
+// Handle stars game mode logic
+function handleStarsMode(ctx, canvas) {
+    // Create new stars at intervals
+    const currentTime = Date.now();
+    if (gameState.stars.length < 10 && currentTime - gameState.lastStarTime > gameState.starSpawnInterval) { // Limit number of stars on screen
+        gameState.stars.push(createStar(canvas, false)); // false indicates not to check for pipe overlap
+        gameState.lastStarTime = currentTime;
+    }
 
-// /**
-//  * Initialize the module with required context
-//  * @param {HTMLCanvasElement} gameCanvas - The game canvas element
-//  */
-// export function setupStarsMode(gameCanvas) {
-//     canvas = gameCanvas;
-// }
+    // Update and draw each star
+    drawStars(ctx);
 
-// /**
-//  * Create a new star
-//  * @returns {Object} - New star object
-//  */
-// export function createStar() {
-//     const isBigStar = Math.random() < gameState.bigStarChance;
-//     const starSize = isBigStar ? 40 : 25;
-    
-//     // Random position
-//     const x = canvas.width;
-//     const y = Math.random() * (canvas.height - gameState.ground.height - 2 * starSize) + starSize;
-    
-//     // Ensure the star doesn't overlap with pipes
-//     if (isOverlappingPipe(x, y, starSize, starSize, gameState.pipes)) {
-//         // Try again with a different position if overlapping
-//         return createStar();
-//     }
-    
-//     return {
-//         x: x,
-//         y: y,
-//         width: starSize,
-//         height: starSize,
-//         isBigStar: isBigStar,
-//         collected: false,
-//         value: isBigStar ? 5 : 1
-//     };
-// }
+    // Check star collisions
+    checkStarCollisions(); // This function will be in starUtils.js and handle scoring
+}
 
-// /**
-//  * Handle game logic for stars mode
-//  */
-// export function handleStarsMode(ctx) {
-//     // Only run if in a star-related game mode
-//     if (gameSettings.mode !== 'stars' && gameSettings.mode !== 'pipes-and-stars') {
-//         return;
-//     }
-    
-//     // Create new stars periodically
-//     const currentTime = Date.now();
-//     if (currentTime - gameState.lastStarTime > gameState.starSpawnInterval) {
-//         gameState.stars.push(createStar());
-//         gameState.lastStarTime = currentTime;
-//     }
-    
-//     // Update stars
-//     for (let i = 0; i < gameState.stars.length; i++) {
-//         const star = gameState.stars[i];
-        
-//         // Move star
-//         star.x -= gameState.pipeSpeed;
-        
-//         // Check if star was collected
-//         if (!star.collected && checkStarCollection(gameState.bird, star)) {
-//             star.collected = true;
-//             gameState.score += star.value;
-            
-//             // Play star collection sound
-//             if (sounds && sounds.star) {
-//                 sounds.star.currentTime = 0;
-//                 sounds.star.play().catch(e => console.log("Audio play failed:", e));
-//             }
-//         }
-//     }
-    
-//     // Remove stars that are off-screen or collected
-//     gameState.stars = gameState.stars.filter(star => 
-//         star.x + star.width > 0 && !star.collected);
-    
-//     // Draw stars
-//     if (ctx) {
-//         for (const star of gameState.stars) {
-//             if (!star.collected) {
-//                 drawStar(ctx, assets.star, star);
-//             }
-//         }
-//     }
-// }
+// Apply difficulty settings for stars mode
+function applyStarsDifficulty() {
+    switch (gameSettings.difficulty) {
+        case 'easy':
+            gameState.pipeSpeed = 1.5; // Star movement speed
+            gameState.starSpawnInterval = 2000; // Slower star spawn
+            gameState.bigStarChance = 0.10; // Higher chance of big stars
+            gameState.gravity = 0.025; // Slightly less gravity
+            gameState.bird.jumpStrength = -2.2;
+            break;
+        case 'normal':
+            gameState.pipeSpeed = 2;
+            gameState.starSpawnInterval = 1800;
+            gameState.bigStarChance = 0.07;
+            gameState.gravity = 0.03;
+            gameState.bird.jumpStrength = -2.5;
+            break;
+        case 'hard':
+            gameState.pipeSpeed = 2.8;
+            gameState.starSpawnInterval = 1500; // Faster star spawn
+            gameState.bigStarChance = 0.05; // Lower chance of big stars
+            gameState.gravity = 0.035;
+            gameState.bird.jumpStrength = -2.8;
+            break;
+        case 'arcade':
+            // Arcade mode for stars might involve increasing speed and spawn rate over time/score
+            gameState.pipeSpeed = 2.2;
+            gameState.starSpawnInterval = 1700;
+            gameState.bigStarChance = 0.06;
+            gameState.gravity = 0.03;
+            gameState.bird.jumpStrength = -2.5;
+            // Arcade-specific progression can be handled within handleStarsMode or a separate arcade update function
+            gameState.arcadeMode.initialSpeed = 2.2;
+            gameState.arcadeMode.initialStarSpawn = 1700;
+            gameState.arcadeMode.speedIncrease = 0.1; // Increase star speed
+            gameState.arcadeMode.spawnRateDecrease = 50; // Decrease spawn interval
+            gameState.arcadeMode.scoreThreshold = 3; // Increase difficulty every 3 stars in arcade
+            break;
+    }
+}
 
-// /**
-//  * Check if bird collects a star
-//  * @param {Object} bird - Bird object with position and dimensions
-//  * @param {Object} star - Star object with position and dimensions
-//  * @returns {boolean} - Whether the bird collects the star
-//  */
-// function checkStarCollection(bird, star) {
-//     return (
-//         bird.x < star.x + star.width &&
-//         bird.x + bird.width > star.x &&
-//         bird.y < star.y + star.height &&
-//         bird.y + bird.height > star.y &&
-//         !star.collected
-//     );
-// }
+export {
+    handleStarsMode,
+    applyStarsDifficulty
+};

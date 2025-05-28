@@ -1,102 +1,72 @@
-// // modes/pipesStars.js
-// import { gameState, gameSettings } from '../gameState.js';
-// import { assets, sounds } from '../assets.js';
-// import { createPipe, handlePipesMode } from './pipes.js';
-// import { createStar, checkStarCollisions, handleStarsMode } from './stars.js';
+// static/js/modes/pipeStars.js - Pipes and Stars game mode implementation
+import { gameState, gameSettings, sounds, updateScore } from '../gameState.js';
+import { assets } from '../assets.js';
+import { handlePipesMode, applyPipesDifficulty as basePipesDifficulty } from './pipes.js'; // Import from pipes.js
+import { checkStarCollisions, createStar, drawStars } from './starUtils.js'; // We'll create this utility file
 
-// // Additional collision detection for pipe-star interactions
-// function ensureStarPositioning(star) {
-//     // Check if star is in a valid position away from pipes
-//     let isValidPosition = true;
-//     const buffer = 30; // Buffer space from pipe edges
-    
-//     for (const pipe of gameState.pipes) {
-//         // Check horizontal overlap
-//         if (star.x < pipe.x + pipe.width + buffer && star.x + star.width + buffer > pipe.x) {
-//             // Check if star is in the pipe's path
-//             if (star.y < pipe.topHeight + buffer || star.y + star.height > pipe.bottomY - buffer) {
-//                 isValidPosition = false;
-//                 break;
-//             }
-//         }
-//     }
-    
-//     return isValidPosition;
-// }
+// Handle combined pipes and stars game mode logic
+function handlePipesAndStarsMode(ctx, canvas) {
+    // Handle pipes (movement, drawing, creation)
+    handlePipesMode(ctx, canvas); // Reuse the existing pipes logic
 
-// // Create a star specifically for the pipes-and-stars mode
-// function createPipesAndStarsStar() {
-//     const star = createStar(); // Get base star from stars.js
-    
-//     // Ensure the star is not positioned inside or too close to a pipe
-//     let attempts = 0;
-//     const maxAttempts = 15;
-    
-//     while (!ensureStarPositioning(star) && attempts < maxAttempts) {
-//         // Adjust position and try again
-//         const minY = 50;
-//         const maxY = gameState.ground.y - 50;
-//         star.y = minY + Math.random() * (maxY - minY);
-        
-//         // Try positioning further to the right if needed
-//         if (attempts > 5) {
-//             star.x += 100; // Move further right to avoid pipes
-//         }
-        
-//         attempts++;
-//     }
-    
-//     // Adjust star speed to match pipe speed for consistency
-//     star.speed = gameState.pipeSpeed;
-    
-//     return star;
-// }
+    // Handle stars
+    const currentTime = Date.now();
+    if (gameState.stars.length < 5 && currentTime - gameState.lastStarTime > gameState.starSpawnInterval) { // Limit stars
+        // true indicates to check for pipe overlap
+        const newStar = createStar(canvas, true);
+        if (newStar) { // createStar might return null if no valid position is found
+            gameState.stars.push(newStar);
+        }
+        gameState.lastStarTime = currentTime;
+    }
 
-// // Mark pipes as passed without awarding points in combined mode
-// function handlePipeStarScoring(pipe) {
-//     if (!pipe.passed && gameState.bird.x > pipe.x + pipe.width) {
-//         pipe.passed = true;
-//         // No points awarded for passing pipes in combined mode
-//         // Only stars give points in this mode
-//     }
-// }
+    // Update and draw each star
+    drawStars(ctx);
 
-// // Main handler for the combined pipes-and-stars mode
-// function handlePipesAndStarsMode() {
-//     // Only run if we're in the combined mode
-//     if (gameSettings.mode !== 'pipes-and-stars') {
-//         return;
-//     }
-    
-//     // Call the individual handlers for pipes and stars
-//     // We're using the core functionality from each mode
-//     handlePipesMode();
-//     handleStarsMode();
-    
-//     // Find pipes that have been passed and manage scoring
-//     // We override the scoring here to customize for combined mode
-//     for (const pipe of gameState.pipes) {
-//         handlePipeStarScoring(pipe);
-//     }
-    
-//     // Spawn stars slightly less frequently in combined mode
-//     // This logic runs in handleStarsMode, but we can adjust the interval here
-//     gameState.starSpawnInterval = 2500; // Slightly longer interval than pure stars mode
-// }
+    // Check star collisions (handles scoring for stars)
+    checkStarCollisions();
+}
 
-// // Custom star spawn timing for combined mode
-// function adjustStarSpawnRate() {
-//     // Dynamically adjust star spawn rate based on game progress
-//     // This makes stars appear more or less frequently as the game progresses
-//     if (gameSettings.mode === 'pipes-and-stars') {
-//         const baseInterval = 2500;
-//         const minInterval = 1800;
-        
-//         // As score increases, stars spawn more frequently, up to a limit
-//         const scoreAdjustment = Math.min(gameState.score * 20, 700);
-//         gameState.starSpawnInterval = Math.max(baseInterval - scoreAdjustment, minInterval);
-//     }
-// }
+// Apply difficulty settings for pipes and stars mode
+function applyPipesAndStarsDifficulty() {
+    // Start with base pipe difficulty settings
+    basePipesDifficulty();
 
-// // Export the functionality
-// export { handlePipesAndStarsMode, adjustStarSpawnRate, createPipesAndStarsStar };
+    // Then, adjust or add star-specific settings based on difficulty
+    switch (gameSettings.difficulty) {
+        case 'easy':
+            gameState.starSpawnInterval = 3000;
+            gameState.bigStarChance = 0.12;
+            // Bird settings might be a balance or lean towards easier pipe navigation
+            gameState.gravity = 0.028;
+            gameState.bird.jumpStrength = -2.3;
+            break;
+        case 'normal':
+            gameState.starSpawnInterval = 2500;
+            gameState.bigStarChance = 0.08;
+            // gameState.gravity = 0.03; (already set by basePipesDifficulty if it matches)
+            // gameState.bird.jumpStrength = -2.5;
+            break;
+        case 'hard':
+            gameState.starSpawnInterval = 2000;
+            gameState.bigStarChance = 0.06;
+            // gameState.gravity = 0.035;
+            // gameState.bird.jumpStrength = -2.8;
+            break;
+        case 'arcade':
+            // Arcade for combined mode will also use the pipes arcade progression
+            // and add star progression.
+            gameState.starSpawnInterval = 2200;
+            gameState.bigStarChance = 0.07;
+            gameState.arcadeMode.initialStarSpawnPipes = 2200;
+            gameState.arcadeMode.spawnRateDecreasePipes = 60; // Different var name to avoid conflict
+            // Note: The pipe scoring in `handlePipesMode` will drive arcade for pipes.
+            // Star scoring in `checkStarCollisions` can drive arcade for stars.
+            break;
+    }
+}
+
+export {
+    handlePipesAndStarsMode,
+    applyPipesAndStarsDifficulty
+};

@@ -6,6 +6,8 @@ import { gameState, gameSettings, screens, updateScore, updateLivesDisplay } fro
 import { assets, loadAssets, checkAssets, resizeCanvas } from './assets.js';
 // Import game mode specifics (example: pipes)
 import { handlePipesMode, applyPipesDifficulty } from './modes/pipes.js';
+import { handleStarsMode, applyStarsDifficulty } from './modes/stars.js';
+import { handlePipesAndStarsMode, applyPipesAndStarsDifficulty } from './modes/pipeStars.js';
 // Import utility functions
 import { checkCollisions } from './utils/collisions.js';
 import { drawBackground, drawGround, drawBird, updateBirdPhysics } from './utils/rendering.js';
@@ -417,6 +419,10 @@ async function startGame() {
     // Apply selected difficulty settings
     if (gameSettings.mode === 'pipes') {
         applyPipesDifficulty();
+    } else if (gameSettings.mode === 'stars') {
+        applyStarsDifficulty(); // NEW
+    } else if (gameSettings.mode === 'pipes-and-stars') {
+        applyPipesAndStarsDifficulty(); // NEW
     }
     // Add logic for other modes here...
 
@@ -527,8 +533,13 @@ function gameLoop(ctx, canvas) {
 
     updateBirdPhysics();
 
+    // Handle game mode logic
     if (gameSettings.mode === 'pipes') {
         handlePipesMode(ctx, canvas);
+    } else if (gameSettings.mode === 'stars') {
+        handleStarsMode(ctx, canvas); // NEW
+    } else if (gameSettings.mode === 'pipes-and-stars') {
+        handlePipesAndStarsMode(ctx, canvas); // NEW
     }
     // Add logic for other game modes here...
 
