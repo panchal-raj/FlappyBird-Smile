@@ -53,7 +53,7 @@ function checkCollisions(gameOverCallback) {
     }
     
     // Only check pipe collisions in pipe-related game modes
-    if (gameSettings.mode === 'pipes' ) { //|| gameSettings.mode === 'pipes-and-stars'
+    if (gameSettings.mode === 'pipes' || gameSettings.mode === 'pipes-and-stars') { //
         // Pipe collisions
         for (const pipe of gameState.pipes) {
             // Check collision only if pipes are in range of bird

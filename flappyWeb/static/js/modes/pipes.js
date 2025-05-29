@@ -1,5 +1,5 @@
 // pipes.js - Pipe game mode implementation
-import { gameState, sounds, updateScore } from '../gameState.js';
+import { gameState, sounds, gameSettings, updateScore } from '../gameState.js';
 import { assets } from '../assets.js';
 
 // Create a new pipe
@@ -40,7 +40,8 @@ function handlePipesMode(ctx, canvas) {
         pipe.x -= gameState.pipeSpeed;
         
         // Check if pipe was passed
-        if (!pipe.passed && gameState.bird.x > pipe.x + pipe.width) {
+        if (gameSettings.mode === 'pipes' && !pipe.passed && gameState.bird.x > pipe.x + pipe.width) {
+        // if (!pipe.passed && gameState.bird.x > pipe.x + pipe.width) {
             pipe.passed = true;
             gameState.score++;
             updateScore(gameState.score);
