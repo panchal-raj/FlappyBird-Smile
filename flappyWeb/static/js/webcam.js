@@ -120,8 +120,14 @@ export function showWebcamElement() {
 export function hideWebcamElement() {
     if (!webcamContainer) webcamContainer = document.getElementById('webcam-container');
     if (webcamContainer) {
+        // --- EDIT START ---
+        // Only hide and log if it's not already hidden
+        if (webcamContainer.style.display === 'none') {
+            return; 
+        }
         webcamContainer.style.display = 'none';
         console.log("Webcam container hidden.");
+        // --- EDIT END ---
     } else {
         console.warn("Webcam container not found, cannot hide it.");
     }

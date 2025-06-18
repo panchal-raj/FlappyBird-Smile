@@ -79,23 +79,16 @@ function stopLoop() {
  * Initializes the game: sets up screens, loads assets, sets up listeners.
  */
 function initGame() {
-        // ADD THESE LINES:
-    if (window.initGameHasRun) {
-        console.log("initGame: Already run. Skipping.");
-        return;
-    }
-    window.initGameHasRun = true;
-    console.log("initGame: Running for the first time.");
-    // END OF ADDED LINES
+    // The check for whether the game has run is now handled
+    // by the DOMContentLoaded listener, so we remove it from here.
 
-    console.log("Initializing game...");
+    console.log("Initializing game..."); // Keep this log
 
     screens.mainMenu = document.getElementById('main-menu');
     screens.game = document.getElementById('game-screen');
-    screens.calibration = document.getElementById('calibration-screen'); // UI elements for calibration text
+    screens.calibration = document.getElementById('calibration-screen');
     screens.gameOver = document.getElementById('game-over-screen');
     screens.pauseScreen = document.getElementById('pause-screen');
-    // screens.calibrationPauseScreen = document.getElementById('calibration-pause-screen');
 
     loadAssets(() => {
         if (checkAssets()) {
@@ -103,11 +96,10 @@ function initGame() {
             resizeCanvas(canvas, gameState);
             window.addEventListener('resize', () => resizeCanvas(canvas, gameState));
             setupInputListeners(canvas, showScreen, startGame, resumeGame); 
-            initializeButtons(); // Setup button event listeners
-            showScreen('mainMenu'); // Start by showing the main menu
+            initializeButtons(); // This will now be called correctly
+            showScreen('mainMenu');
         } else {
             console.error("Failed to initialize game: Assets not loaded properly");
-            // Handle asset loading failure (e.g., display error message)
         }
     });
 }
@@ -300,108 +292,173 @@ function selectDefaultButtons() {
  * Shows the specified screen and hides others. Manages webcam visibility.
  * @param {string} screenName - The key ('mainMenu', 'game', 'gameOver', etc.) of the screen to show.
  */
+
+// Replace the entire old showScreen function with this new one
+
 function showScreen(screenName) {
     console.log(`Showing screen: ${screenName}`);
-    // Hide all primary screen containers
-    Object.keys(screens).forEach(key => {
-        if (screens[key] && key !== 'calibration') { // Don't hide calibration screen div yet
-             screens[key].style.display = 'none';
-        }
+
+    // Hide all primary screen containers first
+    Object.values(screens).forEach(screen => {
+        if (screen) screen.style.display = 'none';
     });
-     // Specifically hide calibration UI unless we are in calibration mode on 'game' screen
-    if (screens.calibration) {
-        screens.calibration.style.display = 'none';
-    }
 
-
-    // Show the requested primary screen
+    // Get the main screen to show
     const screenToShow = screens[screenName];
     if (screenToShow) {
-        screenToShow.style.display = 'block'; // Or 'flex', 'grid' depending on CSS
+        screenToShow.style.display = 'block'; // Or 'flex' if needed
     } else {
-        console.error(`Screen '${screenName}' not found in screens object!`);
+        console.error(`Screen '${screenName}' not found!`);
+        return; // Exit if screen doesn't exist
     }
 
-    // --- Webcam and specific screen logic ---
-    if (screenName === 'mainMenu') {
-        stopWebcam(); // Stop webcam stream AND hide its container
-        gameState.calibrationMode = false; // Ensure calibration mode is off
-        if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
-    } else if (screenName === 'game') {
-        // The 'game' screen hosts the canvas for both gameplay and calibration.
-        if (gameState.calibrationMode) {
-            // If in calibration mode, webcam container should be visible (handled by calibrate-btn click)
-            // and calibration UI elements should be visible.
-            if(screens.calibration) screens.calibration.style.display = 'block'; // Show calibration text, timer etc.
-        } else {
-            // If NOT in calibration mode (i.e., actual gameplay):
-            // Hide the webcam container. The stream might be active for smile detection,
-            // but the <video> element itself is not shown.
-            hideWebcamElement();
-            if(screens.calibration) screens.calibration.style.display = 'none'; // Hide calibration text
-        }
-    } else if (screenName === 'gameOver' || screenName === 'pauseScreen') {
-        // For game over or pause, hide webcam container.
-        // Stop stream if not using smile input, as it might be restarted.
-        if (gameSettings.inputMethod !== 'smile' && gameSettings.inputMethod !== 'altitude') {
-            stopWebcam();
-        } else {
-            hideWebcamElement(); // Keep stream for face-api if smile input, but hide element
-        }
-        if(screens.calibration) screens.calibration.style.display = 'none';
-        if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
-    }
+    const pauseButton = document.getElementById('pause-btn');
 
-    // Ensure the game canvas container is visible if showing 'game' screen (for canvas operations)
-    // The 'game' screen div itself should handle this, but being explicit for the canvas parent:
-    const pauseButton = document.getElementById('pause-btn'); 
+    // Now, handle the specific logic for each screen cleanly
+    switch (screenName) {
+        case 'mainMenu':
+            // On the main menu, stop all webcam activity completely.
+            if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
+            stopWebcam(); // This will hide the webcam element.
+            gameState.calibrationMode = false;
+            if (pauseButton) pauseButton.style.display = 'none';
+            break;
 
-    if (screenName === 'game') {
-        if (gameState.calibrationMode) {
-            // CALIBRATION MODE on game screen
-            if (isWebcamReady()) {
-                showWebcamElement(); // Webcam video element might be visible for calibration
-            }
-            if (screens.calibration) {
-                // Use 'flex' to enable centering of #calibration-ui-elements
-                screens.calibration.style.display = 'flex'; 
-            }
-            if (pauseButton) {
-                pauseButton.style.display = 'none'; // HIDE the main pause button
-            }
-        } else {
-            // REGULAR GAMEPLAY on game screen
-            hideWebcamElement(); // Hide webcam video element during actual gameplay
-            if (screens.calibration) {
-                screens.calibration.style.display = 'none'; // Hide calibration UI overlay
-            }
-            if (pauseButton) {
-                pauseButton.style.display = 'block'; // SHOW the main pause button
-                pauseButton.textContent = '⏸️';     // Ensure it's the pause icon
-            }
-        }
-    } else {
-        // For any other screen (mainMenu, gameOver, pauseScreen, etc.)
-        if (pauseButton) {
-            pauseButton.style.display = 'none'; // Hide pause button if not on game screen
-        }
-        // Ensure calibration overlay is also hidden if not on game screen in calibration mode
-        if (screens.calibration) {
-             screens.calibration.style.display = 'none';
-        }
-        // Specific webcam logic for other screens (mainMenu stops it, others might hide element)
-        if (screenName === 'mainMenu') {
-            stopWebcam(); 
-            gameState.calibrationMode = false; 
-        } else if (screenName === 'gameOver' || screenName === 'pauseScreen') {
-            if (gameSettings.inputMethod !== 'smile' && gameSettings.inputMethod !== 'altitude') {
-                stopWebcam();
+        case 'game':
+            // The 'game' screen hosts the canvas for gameplay AND calibration
+            if (gameState.calibrationMode) {
+                // CALIBRATION MODE: Show webcam, show calibration UI, hide pause button
+                if (isWebcamReady()) showWebcamElement();
+                if (screens.calibration) screens.calibration.style.display = 'flex';
+                if (pauseButton) pauseButton.style.display = 'none';
             } else {
-                hideWebcamElement(); 
+                // NORMAL GAMEPLAY: Hide webcam element, hide calibration UI, show pause button
+                hideWebcamElement();
+                if (screens.calibration) screens.calibration.style.display = 'none';
+                if (pauseButton) pauseButton.style.display = 'block';
             }
-        }
+            break;
+
+        case 'gameOver':
+        case 'pauseScreen':
+            // On game over or pause, stop smile detection and hide the webcam element.
+            // We don't call stopWebcam() entirely in case user wants to resume a smile-based game.
+            if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
+            hideWebcamElement();
+            if (pauseButton) pauseButton.style.display = 'none';
+            if (screens.calibration) screens.calibration.style.display = 'none';
+            break;
+
+        default:
+            // For any other screen, ensure webcam is hidden and pause button is not shown
+            hideWebcamElement();
+            if (pauseButton) pauseButton.style.display = 'none';
+            break;
     }
 }
+
+// function showScreen(screenName) {
+//     console.log(`Showing screen: ${screenName}`);
+//     // Hide all primary screen containers
+//     Object.keys(screens).forEach(key => {
+//         if (screens[key] && key !== 'calibration') { // Don't hide calibration screen div yet
+//              screens[key].style.display = 'none';
+//         }
+//     });
+//      // Specifically hide calibration UI unless we are in calibration mode on 'game' screen
+//     if (screens.calibration) {
+//         screens.calibration.style.display = 'none';
+//     }
+
+
+//     // Show the requested primary screen
+//     const screenToShow = screens[screenName];
+//     if (screenToShow) {
+//         screenToShow.style.display = 'block'; // Or 'flex', 'grid' depending on CSS
+//     } else {
+//         console.error(`Screen '${screenName}' not found in screens object!`);
+//     }
+
+//     // --- Webcam and specific screen logic ---
+//     if (screenName === 'mainMenu') {
+//         stopWebcam(); // Stop webcam stream AND hide its container
+//         gameState.calibrationMode = false; // Ensure calibration mode is off
+//         if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
+//     } else if (screenName === 'game') {
+//         // The 'game' screen hosts the canvas for both gameplay and calibration.
+//         if (gameState.calibrationMode) {
+//             // If in calibration mode, webcam container should be visible (handled by calibrate-btn click)
+//             // and calibration UI elements should be visible.
+//             if(screens.calibration) screens.calibration.style.display = 'block'; // Show calibration text, timer etc.
+//         } else {
+//             // If NOT in calibration mode (i.e., actual gameplay):
+//             // Hide the webcam container. The stream might be active for smile detection,
+//             // but the <video> element itself is not shown.
+//             hideWebcamElement();
+//             if(screens.calibration) screens.calibration.style.display = 'none'; // Hide calibration text
+//         }
+//     } else if (screenName === 'gameOver' || screenName === 'pauseScreen') {
+//         // For game over or pause, hide webcam container.
+//         // Stop stream if not using smile input, as it might be restarted.
+//         if (gameSettings.inputMethod !== 'smile' && gameSettings.inputMethod !== 'altitude') {
+//             stopWebcam();
+//         } else {
+//             hideWebcamElement(); // Keep stream for face-api if smile input, but hide element
+//         }
+//         if(screens.calibration) screens.calibration.style.display = 'none';
+//         if (typeof stopSmileUpdates === 'function') stopSmileUpdates();
+//     }
+
+//     // Ensure the game canvas container is visible if showing 'game' screen (for canvas operations)
+//     // The 'game' screen div itself should handle this, but being explicit for the canvas parent:
+//     const pauseButton = document.getElementById('pause-btn'); 
+
+//     if (screenName === 'game') {
+//         if (gameState.calibrationMode) {
+//             // CALIBRATION MODE on game screen
+//             if (isWebcamReady()) {
+//                 showWebcamElement(); // Webcam video element might be visible for calibration
+//             }
+//             if (screens.calibration) {
+//                 // Use 'flex' to enable centering of #calibration-ui-elements
+//                 screens.calibration.style.display = 'flex'; 
+//             }
+//             if (pauseButton) {
+//                 pauseButton.style.display = 'none'; // HIDE the main pause button
+//             }
+//         } else {
+//             // REGULAR GAMEPLAY on game screen
+//             hideWebcamElement(); // Hide webcam video element during actual gameplay
+//             if (screens.calibration) {
+//                 screens.calibration.style.display = 'none'; // Hide calibration UI overlay
+//             }
+//             if (pauseButton) {
+//                 pauseButton.style.display = 'block'; // SHOW the main pause button
+//                 pauseButton.textContent = '⏸️';     // Ensure it's the pause icon
+//             }
+//         }
+//     } else {
+//         // For any other screen (mainMenu, gameOver, pauseScreen, etc.)
+//         if (pauseButton) {
+//             pauseButton.style.display = 'none'; // Hide pause button if not on game screen
+//         }
+//         // Ensure calibration overlay is also hidden if not on game screen in calibration mode
+//         if (screens.calibration) {
+//              screens.calibration.style.display = 'none';
+//         }
+//         // Specific webcam logic for other screens (mainMenu stops it, others might hide element)
+//         if (screenName === 'mainMenu') {
+//             stopWebcam(); 
+//             gameState.calibrationMode = false; 
+//         } else if (screenName === 'gameOver' || screenName === 'pauseScreen') {
+//             if (gameSettings.inputMethod !== 'smile' && gameSettings.inputMethod !== 'altitude') {
+//                 stopWebcam();
+//             } else {
+//                 hideWebcamElement(); 
+//             }
+//         }
+//     }
+// }
 
 // --- Game State Control ---
 
@@ -554,9 +611,19 @@ function gameLoop(ctx, canvas) {
 
 
 // --- Initialization Trigger ---
+// document.addEventListener('DOMContentLoaded', function() {
+//     console.log("DOM Content Loaded - initializing game");
+//     // gameState.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
+//     initGame();
+// });
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM Content Loaded - initializing game");
-    // gameState.highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
+    if (window.initGameHasRun) {
+        console.log("DOM Content Loaded: initGame has already run. Skipping.");
+        return;
+    }
+    console.log("DOM Content Loaded - initializing game for the first time");
+    window.initGameHasRun = true; // Set the flag immediately
     initGame();
 });
 
