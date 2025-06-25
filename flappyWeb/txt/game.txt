@@ -37,17 +37,13 @@ let animationFrameId = null;
  * Requests the next animation frame for a given loop function.
  * @param {Function} loopFunction - The function to call in the next frame.
  */
-// function requestNextFrame(loopFunction) {
-//     if (!ctx || !canvas) {
-//         console.error("Canvas context or element is missing for requestNextFrame.");
-//         stopLoop();
-//         return;
-//     }
-//     animationFrameId = requestAnimationFrame(() => loopFunction(ctx, canvas));
-// }
-
-function requestNextFrame(callback) {
-    animationFrameId = requestAnimationFrame(() => callback(ctx, canvas));
+function requestNextFrame(loopFunction) {
+    if (!ctx || !canvas) {
+        console.error("Canvas context or element is missing for requestNextFrame.");
+        stopLoop();
+        return;
+    }
+    animationFrameId = requestAnimationFrame(() => loopFunction(ctx, canvas));
 }
 
 /**
@@ -605,85 +601,38 @@ function gameOver() {
  * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
  * @param {HTMLCanvasElement} canvas - The game canvas element.
  */
-
-let lastFrameTime = 0;
-const TARGET_FPS = 60;
-const FRAME_TIME = 1000 / TARGET_FPS;
-
 function gameLoop(ctx, canvas) {
-    if (!gameState.running || gameState.calibrationMode) {
+    if (!gameState.running || gameState.calibrationMode) { // Do not run if game stopped or in calibration
         stopLoop();
         return;
     }
 
-    const now = performance.now();
-    const deltaTime = now - lastFrameTime;
-    
-    // Limit frame rate
-    if (deltaTime < FRAME_TIME) {
-        requestAnimationFrame(() => gameLoop(ctx, canvas));
-        return;
-    }
-    
-    lastFrameTime = now - (deltaTime % FRAME_TIME);
-    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw background
+
+    // --- Draw background ---
+    // ALWAYS draw the standard game background during the main game loop.
     drawBackground(ctx, canvas);
-    
+
     updateBirdPhysics();
-    
+
     // Handle game mode logic
     if (gameSettings.mode === 'pipes') {
         handlePipesMode(ctx, canvas);
     } else if (gameSettings.mode === 'stars') {
-        handleStarsMode(ctx, canvas);
+        handleStarsMode(ctx, canvas); // NEW
     } else if (gameSettings.mode === 'pipes-and-stars') {
-        handlePipesAndStarsMode(ctx, canvas);
+        handlePipesAndStarsMode(ctx, canvas); // NEW
     }
-    
+    // Add logic for other game modes here...
+
     checkCollisions(gameOver);
     drawBird(ctx);
-    
+
     gameState.groundPos = (gameState.groundPos - gameState.speed) % (assets.ground?.width || 24);
     drawGround(ctx, canvas);
-    
-    requestAnimationFrame(() => gameLoop(ctx, canvas));
+
+    requestNextFrame(gameLoop);
 }
-
-// function gameLoop(ctx, canvas) {
-//     if (!gameState.running || gameState.calibrationMode) { // Do not run if game stopped or in calibration
-//         stopLoop();
-//         return;
-//     }
-
-//     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-//     // --- Draw background ---
-//     // ALWAYS draw the standard game background during the main game loop.
-//     drawBackground(ctx, canvas);
-
-//     updateBirdPhysics();
-
-//     // Handle game mode logic
-//     if (gameSettings.mode === 'pipes') {
-//         handlePipesMode(ctx, canvas);
-//     } else if (gameSettings.mode === 'stars') {
-//         handleStarsMode(ctx, canvas); // NEW
-//     } else if (gameSettings.mode === 'pipes-and-stars') {
-//         handlePipesAndStarsMode(ctx, canvas); // NEW
-//     }
-//     // Add logic for other game modes here...
-
-//     checkCollisions(gameOver);
-//     drawBird(ctx);
-
-//     gameState.groundPos = (gameState.groundPos - gameState.speed) % (assets.ground?.width || 24);
-//     drawGround(ctx, canvas);
-
-//     requestNextFrame(gameLoop);
-// }
 
 
 // --- Initialization Trigger ---
