@@ -67,6 +67,9 @@ const screens = {
     pauseScreen: null
 };
 
+gameState.lastFrameTime = 0;
+gameState.deltaTime = 1;
+
 // Update score with side effects
 function updateScore(score) {
     // Update center score display
@@ -78,9 +81,9 @@ function updateScore(score) {
         localStorage.setItem('flappyHighScore', score);
     }
     
-    // Handle arcade mode difficulty progression
+    // Handle arcade mode difficulty progression with time-based scaling
     if (gameState.difficulty === 'arcade' && score > 0 && score % gameState.arcadeMode.scoreThreshold === 0) {
-        gameState.pipeSpeed += gameState.arcadeMode.speedIncrease;
+        gameState.pipeSpeed += gameState.arcadeMode.speedIncrease * gameState.deltaTime;
         gameState.pipeGap = Math.max(90, gameState.pipeGap - gameState.arcadeMode.gapDecrease);
     }
 }

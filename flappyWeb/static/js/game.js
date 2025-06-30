@@ -19,6 +19,24 @@ import { initWebcam, isWebcamReady, stopWebcam, showWebcamElement, hideWebcamEle
 import { startCalibrationScreen, stopCalibration} from './calibration.js';
 import { loadModels, faceApiLoaded, stopSmileUpdates } from './smileDetector.js';
 
+
+// Add at the top of the file
+const isLowEndDevice = navigator.deviceMemory < 4 || 
+                      navigator.hardwareConcurrency < 4 ||
+                      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Reduce visual effects on low-end devices
+if (isLowEndDevice) {
+  // Reduce animation frames for bird
+  assets.bird = [assets.bird[0]]; // Just use one frame
+  
+  // Simplify background
+  gameState.useSimpleBackground = true;
+  
+  // Reduce draw distance
+  gameState.drawDistance = 300; // Only render objects within 300px
+}
+
 // Make game functions globally available (optional, useful for debugging)
 window.gameLoaded = true;
 window.startGame = startGame; // Expose startGame for HTML button
@@ -520,7 +538,7 @@ async function startGame() {
     gameState.invulnerabilityTimer = 0;
     gameState.pipes = [];
     gameState.stars = [];
-    gameState.bird.x = 120;
+    gameState.bird.x = 150;
     gameState.bird.y = canvas.height / 3;
     gameState.bird.velocity = 0;
     gameState.groundPos = 0;

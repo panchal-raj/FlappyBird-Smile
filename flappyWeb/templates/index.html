@@ -6,6 +6,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Load Face API first -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <!-- Add these performance optimizations to <head> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="preload" href="/static/assets/sprites/yellowbird-upflap.png" as="image">
+    <link rel="preload" href="/static/assets/sprites/background-day.png" as="image">
 </head>
 <body>
     <div id="game-container" class="game-container">

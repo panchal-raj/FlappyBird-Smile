@@ -13,19 +13,19 @@ const gameState = {
     running: false,
     score: 0,
     highScore: localStorage.getItem('flappyHighScore') || 0,
-    gravity: 0.03,
+    gravity: 0.09,
     bird: {
         x: 50,
         y: 150,
         width: 34,
         height: 24,
         velocity: 0,
-        jumpStrength: -2.5
+        jumpStrength: -3.5
     },
     pipes: [],
-    pipeGap: 150,
+    pipeGap: 500,
     pipeWidth: 52,
-    pipeDistance: 220,
+    pipeDistance: 500,
     pipeSpeed: 2,
     nextPipeTime: 0,
     ground: {
@@ -45,7 +45,24 @@ const gameState = {
     stars: [],
     starSpawnInterval: 2000,
     lastStarTime: 0,
-    bigStarChance: 0.05
+    bigStarChance: 0.05,
+
+    lastFrameTime: 0,
+    deltaTime: 1,
+    
+    // Optimize memory usage with object pooling
+    objectPool: {
+        stars: [],
+        pipes: []
+    },
+    
+    // Cache frequently accessed DOM elements
+    domElements: {
+        score: document.getElementById('score'),
+        lives: document.getElementById('lives-count'),
+        finalScore: document.getElementById('final-score'),
+        highScore: document.getElementById('high-score')
+    }
 
 
 };
@@ -71,26 +88,42 @@ gameState.lastFrameTime = 0;
 gameState.deltaTime = 1;
 
 // Update score with side effects
+// function updateScore(score) {
+//     // Update center score display
+//     document.getElementById('score').textContent = score;
+    
+//     // Update high score if needed
+//     if (score > gameState.highScore) {
+//         gameState.highScore = score;
+//         localStorage.setItem('flappyHighScore', score);
+//     }
+    
+//     // Handle arcade mode difficulty progression with time-based scaling
+//     if (gameState.difficulty === 'arcade' && score > 0 && score % gameState.arcadeMode.scoreThreshold === 0) {
+//         gameState.pipeSpeed += gameState.arcadeMode.speedIncrease * gameState.deltaTime;
+//         gameState.pipeGap = Math.max(90, gameState.pipeGap - gameState.arcadeMode.gapDecrease);
+//     }
+// }
 function updateScore(score) {
-    // Update center score display
-    document.getElementById('score').textContent = score;
-    
-    // Update high score if needed
-    if (score > gameState.highScore) {
-        gameState.highScore = score;
-        localStorage.setItem('flappyHighScore', score);
-    }
-    
-    // Handle arcade mode difficulty progression with time-based scaling
-    if (gameState.difficulty === 'arcade' && score > 0 && score % gameState.arcadeMode.scoreThreshold === 0) {
-        gameState.pipeSpeed += gameState.arcadeMode.speedIncrease * gameState.deltaTime;
-        gameState.pipeGap = Math.max(90, gameState.pipeGap - gameState.arcadeMode.gapDecrease);
-    }
+  // Direct DOM manipulation instead of querySelector on each update
+  gameState.domElements.score.textContent = score;
+  
+  // Update high score if needed
+  if (score > gameState.highScore) {
+    gameState.highScore = score;
+    localStorage.setItem('flappyHighScore', score);
+  }
+  
+  // Handle arcade mode progression with frame-rate independent scaling
+  if (gameState.difficulty === 'arcade' && score > 0 && score % gameState.arcadeMode.scoreThreshold === 0) {
+    gameState.pipeSpeed += gameState.arcadeMode.speedIncrease * gameState.deltaTime;
+    gameState.pipeGap = Math.max(90, gameState.pipeGap - gameState.arcadeMode.gapDecrease);
+  }
 }
 
 // Update lives display
 function updateLivesDisplay() {
-    document.getElementById('lives-count').textContent = `${gameState.lives}/15`;
+    gameState.domElements.lives.textContent = `${gameState.lives}/15`;
 }
 
 // Export gameState and functions

@@ -81,24 +81,24 @@ function applyPipesDifficulty() {
     switch (gameState.difficulty) {
         case 'easy':
             gameState.pipeGap = 200;
-            gameState.pipeSpeed = 1.0;
+            gameState.pipeSpeed = 3.0;
             gameState.pipeDistance = 400;
             break;
         case 'normal':
             gameState.pipeGap = 180;
-            gameState.pipeSpeed = 2;
+            gameState.pipeSpeed = 4.0;
             gameState.pipeDistance = 350;
             break;
         case 'hard':
-            gameState.pipeGap = 150;
-            gameState.pipeSpeed = 3.5;
-            gameState.pipeDistance = 300;
+            gameState.pipeGap = 800;
+            gameState.pipeSpeed = 7.5;
+            gameState.pipeDistance = 400;
             break;
         case 'arcade':
             gameState.pipeGap = 150;
-            gameState.pipeSpeed = 2;
+            gameState.pipeSpeed = 6.0;
             gameState.pipeDistance = 350;
-            gameState.arcadeMode.speedIncrease = 0.1;
+            gameState.arcadeMode.speedIncrease = 0.2;
             gameState.arcadeMode.gapDecrease = 1;
             gameState.arcadeMode.scoreThreshold = 5;
             break;
